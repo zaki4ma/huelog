@@ -1,65 +1,88 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback } from "react";
+import { signIn } from "next-auth/react";
+import PostForm from "@/components/PostForm";
+import EchoOverlay from "@/components/EchoOverlay";
 
 export default function Home() {
+  const [phase, setPhase] = useState<"post" | "echo">("post");
+  const [echoText, setEchoText] = useState("");
+  const [echoPostId, setEchoPostId] = useState<string | null>(null);
+  const [echoIsPreset, setEchoIsPreset] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+
+  const handlePost = useCallback(async (emotion: number, body: string) => {
+    setIsPosting(true);
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emotion, body }),
+      });
+
+      if (res.status === 401) {
+        signIn("google");
+        return;
+      }
+
+      if (!res.ok) {
+        console.error("Post failed:", await res.text());
+        return;
+      }
+
+      const data = await res.json();
+      const echo = data.echo;
+
+      setEchoText(echo?.body ?? "...");
+      setEchoPostId(echo?.id ?? null);
+      setEchoIsPreset(echo?.isPreset ?? false);
+      setPhase("echo");
+    } finally {
+      setIsPosting(false);
+    }
+  }, []);
+
+  const handleReturn = useCallback(() => {
+    setPhase("post");
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main
+      className="relative w-full h-screen flex items-center justify-center overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(160deg, #0a0e1a 0%, #0d1220 60%, #111827 100%)",
+      }}
+    >
+      {/* 背景の光の滲み */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-10"
+          style={{
+            background: "radial-gradient(circle, #3b5bdb 0%, transparent 70%)",
+            filter: "blur(60px)",
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <div
+          className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full opacity-10"
+          style={{
+            background: "radial-gradient(circle, #f97316 0%, transparent 70%)",
+            filter: "blur(60px)",
+          }}
+        />
+      </div>
+
+      {phase === "post" ? (
+        <PostForm onPost={handlePost} isPosting={isPosting} />
+      ) : (
+        <EchoOverlay
+          echoText={echoText}
+          postId={echoPostId}
+          isPreset={echoIsPreset}
+          onReturn={handleReturn}
+        />
+      )}
+    </main>
   );
 }
