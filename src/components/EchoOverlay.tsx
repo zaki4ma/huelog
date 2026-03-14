@@ -19,10 +19,18 @@ export default function EchoOverlay({
 }: EchoOverlayProps) {
   const [showEcho, setShowEcho] = useState(true);
   const [lit, setLit] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowEcho(false), 4000);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/notifications")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.unreadCount) setUnreadCount(data.unreadCount); })
+      .catch(() => {});
   }, []);
 
   const handleResonate = async () => {
@@ -136,10 +144,22 @@ export default function EchoOverlay({
           </Link>
           <Link
             href="/posts"
-            className="text-xs text-white/15 hover:text-white/35 transition-colors duration-700 tracking-widest"
+            className="relative text-xs text-white/15 hover:text-white/35 transition-colors duration-700 tracking-widest inline-flex items-center gap-1"
             style={{ letterSpacing: "0.15em" }}
           >
             灯の記録
+            {unreadCount > 0 && (
+              <span
+                className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[9px]"
+                style={{
+                  background: "rgba(251,191,36,0.3)",
+                  color: "rgba(251,191,36,0.9)",
+                  border: "1px solid rgba(251,191,36,0.4)",
+                }}
+              >
+                {unreadCount}
+              </span>
+            )}
           </Link>
         </div>
       </motion.div>

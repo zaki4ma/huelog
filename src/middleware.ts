@@ -14,7 +14,8 @@ export default auth((req) => {
     }
     if (
       pathname.startsWith("/api/posts") ||
-      pathname.startsWith("/api/resonances")
+      pathname.startsWith("/api/resonances") ||
+      pathname.startsWith("/api/notifications")
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -22,5 +23,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/api/posts/:path*", "/api/resonances/:path*", "/calendar/:path*", "/posts/:path*"],
+  matcher: ["/api/posts/:path*", "/api/resonances/:path*", "/api/notifications/:path*", "/calendar/:path*", "/posts/:path*"],
 };
