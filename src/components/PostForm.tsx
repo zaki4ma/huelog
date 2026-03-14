@@ -73,16 +73,21 @@ export default function PostForm({ onPost, isPosting = false }: PostFormProps) {
         </div>
       </div>
 
-      {/* テキストエリア */}
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        maxLength={40}
-        rows={2}
-        placeholder="今の気持ちをひと息で..."
-        className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 placeholder-white/25 outline-none focus:border-white/20 focus:bg-white/8 transition-all duration-1000"
-        style={{ lineHeight: "1.8" }}
-      />
+      {/* テキストエリア + 文字数カウント */}
+      <div className="w-full flex flex-col gap-1">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={40}
+          rows={2}
+          placeholder="今の気持ちをひと息で..."
+          className="w-full resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 placeholder-white/25 outline-none focus:border-white/20 focus:bg-white/8 transition-all duration-1000"
+          style={{ lineHeight: "1.8" }}
+        />
+        <p className="text-right text-xs pr-1" style={{ color: text.length >= 40 ? "rgba(249,115,22,0.7)" : "rgba(255,255,255,0.2)" }}>
+          {text.length} / 40
+        </p>
+      </div>
 
       {/* 灯すボタン */}
       <motion.button
