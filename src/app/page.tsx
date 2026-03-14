@@ -1,16 +1,40 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { signIn } from "next-auth/react";
+import HomeScreen from "@/components/HomeScreen";
 import PostForm from "@/components/PostForm";
 import EchoOverlay from "@/components/EchoOverlay";
 
+type Phase = "home" | "post" | "echo";
+
 export default function Home() {
-  const [phase, setPhase] = useState<"post" | "echo">("post");
+  const [phase, setPhase] = useState<Phase>("home");
   const [echoText, setEchoText] = useState("");
   const [echoPostId, setEchoPostId] = useState<string | null>(null);
   const [echoIsPreset, setEchoIsPreset] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+
+  // ログイン後リダイレクト時に投稿フォームへ自動遷移
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("posting") === "1") {
+      setPhase("post");
+      // URLパラメータを消す
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
+
+  // 「はじめる」ボタン: セッション確認 → ログイン済みなら投稿フォームへ
+  const handleStart = useCallback(async () => {
+    const res = await fetch("/api/auth/session");
+    const session = await res.json();
+    if (session?.user) {
+      setPhase("post");
+    } else {
+      signIn("google", { callbackUrl: "/?posting=1" });
+    }
+  }, []);
 
   const handlePost = useCallback(async (emotion: number, body: string) => {
     setIsPosting(true);
@@ -22,7 +46,7 @@ export default function Home() {
       });
 
       if (res.status === 401) {
-        signIn("google");
+        signIn("google", { callbackUrl: "/?posting=1" });
         return;
       }
 
@@ -44,7 +68,7 @@ export default function Home() {
   }, []);
 
   const handleReturn = useCallback(() => {
-    setPhase("post");
+    setPhase("home");
   }, []);
 
   return (
@@ -73,9 +97,11 @@ export default function Home() {
         />
       </div>
 
-      {phase === "post" ? (
+      {phase === "home" && <HomeScreen onStart={handleStart} />}
+      {phase === "post" && (
         <PostForm onPost={handlePost} isPosting={isPosting} />
-      ) : (
+      )}
+      {phase === "echo" && (
         <EchoOverlay
           echoText={echoText}
           postId={echoPostId}
